@@ -5,6 +5,7 @@ from PIL import Image
 import os
 import os.path
 import sys
+import pandas as pd
 
 
 def pil_loader(path):
@@ -30,6 +31,23 @@ class Caltech(VisionDataset):
         - Labels should start from 0, so for Caltech you will have lables 0...100 (excluding the background class) 
         '''
 
+        images_paths = []
+        labels = []
+
+        self.categories = os.listdir(self.root)
+        self.categories.remove("BACKGROUND_Google")
+
+        for path in open(f"./Caltech101/{self.split}.txt"):
+          path = path.replace("\n", "")
+          category = path.split("/")[0]
+          if(category != "BACKGROUND_Google"):
+            image_path = self.root + "/" + path
+            images_paths.append(image_path)
+            labels.append(self.categories.index(category))
+
+    
+        self.data = pd.DataFrame(zip(images_paths, labels), columns = ["image_path", "label"])
+
     def __getitem__(self, index):
         '''
         __getitem__ should access an element through its index
@@ -40,9 +58,8 @@ class Caltech(VisionDataset):
             tuple: (sample, target) where target is class_index of the target class.
         '''
 
-        image, label = ... # Provide a way to access image and label via index
-                           # Image should be a PIL Image
-                           # label can be int
+        image_path = self.data["image_path"].iloc[index]
+        image, label = pil_loader(image_path), self.data["label"].iloc[index] 
 
         # Applies preprocessing when accessing the image
         if self.transform is not None:
@@ -55,5 +72,5 @@ class Caltech(VisionDataset):
         The __len__ method returns the length of the dataset
         It is mandatory, as this is used by several other components
         '''
-        length = ... # Provide a way to get the length (number of elements) of the dataset
+        length = len(self.data) # Provide a way to get the length (number of elements) of the dataset
         return length
